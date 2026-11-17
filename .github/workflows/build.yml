@@ -128,6 +128,21 @@ jobs:
           npm run build:pro
           du -sh ../core/cmd/server/web/assets
 
+      - name: Provide upstream-only embed placeholders
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 官方 git tag 里 agent/utils/vm/helper/embedded_{amd64,arm64}.go 用
+          # //go:embed bin/1panel-kvm-<arch> 引用两个只有发布时才注入的二进制，
+          # tag 源码里没有，直接编译会报 "pattern ... no matching files found"。
+          # 本补丁不涉及虚拟机功能，用空占位让 go:embed 通过编译。
+          D=src/agent/utils/vm/helper/bin
+          mkdir -p "$D"
+          for a in amd64 arm64; do
+            [[ -f "$D/1panel-kvm-$a" ]] || : > "$D/1panel-kvm-$a"
+          done
+          ls -la "$D"
+
       - name: Build agent + core
         shell: bash
         run: |

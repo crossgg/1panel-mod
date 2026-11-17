@@ -156,6 +156,10 @@ sudo bash /opt/1panel-mod/current/install.sh --city-only
 - `check_upstream.sh` 只能做**自动体检 + 报告**；覆盖文件被官方重写时必须人工/AI 重新合并，
   因此不会自动出包，也没有任何定时轮询。
 
+> **已知限制**：官方 git tag 的源码缺少 `agent/utils/vm/helper/bin/1panel-kvm-{amd64,arm64}`
+> 这两个只随官方发布流程注入的二进制。CI 会用空占位文件让 `go:embed` 编译通过，
+> 因此本补丁构建出的 agent **不包含虚拟机（KVM）相关功能**；WAF、网站监控、网站管理等其余功能不受影响。
+
 ## 升级与更新检测
 
 - **官方社区版**：面板「关于 → 更新」保持官方逻辑不变。官方升级会用官方二进制覆盖本补丁，
