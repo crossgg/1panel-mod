@@ -1,0 +1,236 @@
+name: Build patched 1Panel v2.5.1
+
+# 只在手动触发 / 推 tag 时构建，不设 schedule（无定时任务）。
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_tag:
+        description: 'Official 1Panel tag to patch'
+        required: true
+        default: 'v2.5.1'
+      create_release:
+        description: 'Create a GitHub Release'
+        required: true
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+      mod_version:
+        description: 'Mod version tag (empty = auto <upstream>-mod.<next N>)'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v*-mod.*'
+
+permissions:
+  contents: write
+
+env:
+  UPSTREAM_REPO: 1Panel-dev/1Panel
+  GO_VERSION: '1.27.3'
+  NODE_VERSION: '22'
+  CGO_ENABLED: '0'
+  GOFLAGS: '-mod=mod'
+  GOSUMDB: 'off'
+  GOTOOLCHAIN: 'local'
+
+jobs:
+  # 统一计算版本号：所有 job 共用同一个 mod_version，避免 tag_name 与产物内 MOD_VERSION 漂移
+  meta:
+    name: resolve version
+    runs-on: ubuntu-22.04
+    outputs:
+      mod_version: ${{ steps.ver.outputs.mod_version }}
+      upstream_tag: ${{ steps.ver.outputs.upstream_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: ver
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.upstream_tag || 'v2.5.1' }}"
+          MOD="${{ inputs.mod_version }}"
+          REF="${{ github.ref_name }}"
+          EVENT="${{ github.event_name }}"
+          if [[ "$EVENT" == "push" && "${{ github.ref_type }}" == "tag" && "$REF" == *-mod.* ]]; then
+            # 由 push tag 触发：tag 本身就是权威版本号，同时从它反推官方基线
+            [[ -z "$MOD" ]] && MOD="$REF"
+            TAG="${REF%%-mod.*}"
+          elif [[ -z "$MOD" ]]; then
+            # workflow_dispatch 且未手填：按同基线已有 tag 的最大序号 +1
+            LAST="$(git tag --list "${TAG}-mod.*" | sort -V | tail -1 || true)"
+            if [[ -z "$LAST" ]]; then
+              N=1
+            else
+              N=$(( ${LAST##*-mod.} + 1 ))
+            fi
+            MOD="${TAG}-mod.${N}"
+          fi
+          echo "mod_version=$MOD" >> "$GITHUB_OUTPUT"
+          echo "upstream_tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Resolved: event=$EVENT upstream=$TAG mod=$MOD"
+
+  build:
+    name: build (${{ matrix.arch }})
+    needs: meta
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - name: Checkout patch repo
+        uses: actions/checkout@v4
+        with:
+          path: repo
+
+      - name: Checkout official 1Panel source
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.UPSTREAM_REPO }}
+          ref: ${{ needs.meta.outputs.upstream_tag }}
+          path: src
+          fetch-depth: 1
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: |
+            src/agent/go.sum
+            src/core/go.sum
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Apply WAF patch
+        shell: bash
+        run: |
+          bash repo/patch/apply.sh src
+          echo "--- patched files ---"
+          git -C src status --short | head -40 || true
+
+      - name: Install frontend dependencies
+        working-directory: src/frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Build frontend
+        working-directory: src/frontend
+        run: |
+          # 必须清空旧 assets，否则累积旧 chunk 会让 core 从 81MB 涨到 110MB
+          rm -rf ../core/cmd/server/web/assets
+          npm run build:pro
+          du -sh ../core/cmd/server/web/assets
+
+      - name: Build agent + core
+        shell: bash
+        run: |
+          set -euo pipefail
+          export GOARCH=${{ matrix.arch }}
+          export GOOS=linux
+          mkdir -p out
+          (cd src/agent && go build -trimpath -ldflags '-s -w' -o "$GITHUB_WORKSPACE/out/1panel-agent" ./cmd/server/main.go)
+          (cd src/core && go build -trimpath -ldflags '-s -w' -o "$GITHUB_WORKSPACE/out/1panel-core" ./cmd/server/main.go)
+          ls -la out/
+
+      - name: Assemble distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ needs.meta.outputs.upstream_tag }}"
+          MOD_VERSION="${{ needs.meta.outputs.mod_version }}"
+
+          DIST="1panel-waf-${TAG}-linux-${{ matrix.arch }}"
+          mkdir -p "$DIST"
+          cp out/1panel-agent out/1panel-core "$DIST/"
+          cp install.sh "$DIST/"
+          cp -r repo/patch "$DIST/patch"
+          cp repo/patch/scripts/waf_menu_patch.py repo/patch/scripts/monitor_menu_patch.py "$DIST/"
+          cp repo/patch/lua/location_restrict.lua "$DIST/"
+          cp repo/LICENSE "$DIST/"
+          cp repo/SUPPORTED.json "$DIST/"
+          printf '%s\n' "$TAG" > "$DIST/UPSTREAM_TAG"
+          printf '%s\n' "${{ github.sha }}" > "$DIST/PATCH_COMMIT"
+          printf '%s\n' "$MOD_VERSION" > "$DIST/MOD_VERSION"
+          tar -czf "$DIST.tar.gz" "$DIST"
+          (cd "$DIST" && sha256sum 1panel-agent 1panel-core install.sh > SHA256SUMS)
+          cp "$DIST/SHA256SUMS" "$DIST.SHA256SUMS"
+          sha256sum "$DIST.tar.gz"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.arch }}
+          path: |
+            1panel-waf-*.tar.gz
+            1panel-waf-*.SHA256SUMS
+
+  release:
+    name: publish release
+    if: ${{ inputs.create_release != 'false' }}
+    needs: [meta, build]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Verify both architectures are present
+        shell: bash
+        run: |
+          set -euo pipefail
+          for a in amd64 arm64; do
+            f="$(ls dist/1panel-waf-*-linux-${a}.tar.gz 2>/dev/null | head -1 || true)"
+            [[ -n "$f" ]] || { echo "缺少 ${a} 架构产物"; exit 1; }
+            echo "${a}: $f"
+          done
+
+      - name: Source snapshot (GPL-3.0 corresponding source)
+        run: |
+          tar -czf patch-source.tar.gz \
+            --exclude=.git --exclude=node_modules --exclude=tools/dev/t \
+            .github README.md LICENSE SUPPORTED.json docs AGENTS.md quick_start.sh install.sh patch tools
+          sha256sum patch-source.tar.gz
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.meta.outputs.mod_version }}
+          name: 1Panel WAF community patch ${{ needs.meta.outputs.mod_version }}
+          body: |
+            ### 基于官方 1Panel ${{ needs.meta.outputs.upstream_tag }} 构建（Mod ${{ needs.meta.outputs.mod_version }}）
+
+            - Mod 版本标识：`MOD_VERSION`（形如 `v2.5.1-mod.<n>`，install.sh 写入 `/opt/1panel/1panel-mod/VERSION`）
+            - 面板「关于」页并列两个更新入口：官方社区版（保持原样，升级会覆盖补丁并已加警告）与 Mod 版（仅点击时查 `crossgg/1panel-mod` 最新 Release，只提示去仓库看更新命令）
+            - 产物：`1panel-core` + `1panel-agent`（linux/amd64、linux/arm64），`CGO_ENABLED=0`
+            - 一键安装：`curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ github.event.repository.default_branch || 'main' }}/quick_start.sh | sudo bash`
+            - 手动安装：解压后 `sudo bash install.sh`
+            - 卸载/回滚：`sudo bash install.sh --rollback`
+
+            #### GPL-3.0 源码
+            上游 1Panel 采用 GPL-3.0。许可证全文见仓库根 `LICENSE`；本 Release 附
+            `patch-source.tar.gz`（完整补丁源码 + 构建工作流 + 一键安装脚本），对应源码为上游 tag
+            `${{ needs.meta.outputs.upstream_tag }}`（https://github.com/1Panel-dev/1Panel/tree/${{ needs.meta.outputs.upstream_tag }}）
+            叠加本补丁。GeoLite2 数据来自 MaxMind（CC BY-SA 4.0），
+            镜像由 P3TERX/GeoLite.mmdb 提供。
+
+            #### 版本守卫
+            补丁仅针对 v2.5.1 验证；官方升级后需重新出包，安装脚本会拒绝版本不匹配的二进制。
+          files: |
+            dist/*.tar.gz
+            dist/*.SHA256SUMS
+            patch-source.tar.gz
+            quick_start.sh
+            README.md
+            LICENSE
+            SUPPORTED.json

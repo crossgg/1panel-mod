@@ -1,0 +1,200 @@
+/* 官方 xpack 概览页视觉语言：蓝色竖条标题、无阴影白面板、2:1 栅格、大留白 */
+.wf-flat {
+    --wf-blue: #2b6cff;
+    --wf-line: #edf0f5;
+    --wf-muted: #909399;
+    color: #303133;
+    font-size: 13px;
+    max-width: 100%;
+    overflow-x: clip;
+}
+.wf-flat .wf-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px;
+    align-items: stretch;
+}
+.wf-flat .wf-grid > * {
+    min-width: 0;
+}
+.wf-flat .wf-grid > .wf-stack > .wf-panel {
+    flex: 1 1 auto;
+}
+.wf-flat .wf-grid-half {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+}
+.wf-flat .wf-grid-boards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+@media (max-width: 1280px) {
+    .wf-flat .wf-grid,
+    .wf-flat .wf-grid-half {
+        grid-template-columns: 1fr;
+    }
+    .wf-flat .wf-grid-boards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+.wf-flat .wf-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.wf-flat .wf-panel {
+    background: #fff;
+    border: 1px solid var(--wf-line);
+    border-radius: 2px;
+    padding: 14px 16px;
+    box-sizing: border-box;
+}
+.wf-flat .wf-panel.wf-flex {
+    display: flex;
+    flex-direction: column;
+}
+.wf-flat .wf-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    margin: 0 0 12px;
+    padding: 0;
+}
+.wf-flat .wf-title::before {
+    content: '';
+    display: block;
+    width: 3px;
+    height: 13px;
+    border-radius: 1px;
+    background: var(--wf-blue);
+}
+.wf-flat .wf-title .wf-extra {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--wf-muted);
+}
+.wf-flat .wf-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.wf-flat .wf-kpis.wf-8 {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+.wf-flat .wf-kpi {
+    text-align: center;
+    padding: 10px 4px 6px;
+    border-right: 1px solid var(--wf-line);
+    min-width: 0;
+}
+.wf-flat .wf-kpi:last-child {
+    border-right: 0;
+}
+.wf-flat .wf-kpi .k {
+    font-size: 12px;
+    color: var(--wf-muted);
+    white-space: nowrap;
+}
+.wf-flat .wf-kpi .v {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--wf-blue);
+    margin-top: 8px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+.wf-flat .wf-kpi .v.wf-small {
+    font-size: 17px;
+}
+.wf-flat .wf-seg {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.wf-flat .wf-map-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--wf-muted);
+    margin-top: 2px;
+}
+.wf-flat .wf-map-legend .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    background: var(--wf-blue);
+}
+.wf-flat .wf-live {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 118px;
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--wf-blue);
+}
+.wf-flat .wf-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--wf-muted);
+    margin-top: 12px;
+}
+.wf-flat .wf-board-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 0;
+    font-size: 12px;
+}
+.wf-flat .wf-board-row .rank {
+    width: 18px;
+    text-align: center;
+    color: var(--wf-muted);
+}
+.wf-flat .wf-board-row .rank.top3 {
+    color: #f56c6c;
+    font-weight: 700;
+}
+.wf-flat .wf-board-row .val {
+    flex: 0 0 42%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wf-flat .wf-board-row .bar-wrap {
+    flex: 1;
+    height: 5px;
+    background: #f2f4f8;
+    border-radius: 3px;
+    overflow: hidden;
+}
+.wf-flat .wf-board-row .bar {
+    height: 100%;
+    border-radius: 3px;
+}
+.wf-flat .wf-board-row .cnt {
+    width: 34px;
+    text-align: right;
+    color: var(--wf-muted);
+}
+.wf-flat .wf-empty {
+    padding: 26px 0;
+    text-align: center;
+    color: var(--wf-muted);
+    font-size: 12px;
+}

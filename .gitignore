@@ -1,0 +1,17 @@
+# 本地工作区 / 临时产物（不入库）
+.workbuddy/
+archive/
+
+# tools/dev 是本地调试目录，含真机 SSH/面板凭据、内网 IP、测试截图，一律不入库。
+# 唯一例外：lua_x 是从 openresty 镜像提取的 1pwaf LuaJIT 字节码，按需求保留供分析。
+tools/dev/*
+!tools/dev/lua_x/
+!tools/dev/lua_x/**
+
+.tmp_shots/
+**/*.wafbak
+**/*.bak.*
+**/*.log
+dist/
+node_modules/
+.DS_Store

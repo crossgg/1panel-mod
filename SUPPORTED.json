@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "repo": "crossgg/1panel-mod",
+  "default_branch": "main",
+  "note": "本文件是「官方版本 → Mod 版本」索引。发布新 Mod tag 时请同步追加一条；tag 名本身也编码了官方版本，脚本在索引不可用时会按 tag 前缀回退扫描 Releases。",
+  "releases": [
+    {
+      "mod": "v2.5.1-mod.1",
+      "upstream": ["v2.5.1"],
+      "arch": ["amd64", "arm64"],
+      "go": "1.27.3",
+      "node": "22",
+      "assets": {
+        "amd64": "1panel-waf-v2.5.1-linux-amd64.tar.gz",
+        "arm64": "1panel-waf-v2.5.1-linux-arm64.tar.gz"
+      }
+    }
+  ]
+}

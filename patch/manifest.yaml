@@ -1,0 +1,311 @@
+# 机器可读补丁清单 —— AI 改代码前先读这个文件
+#   kind: new       = 纯新增文件，官方源码树里不存在
+#   kind: overwrite = 覆盖官方已有文件（apply.sh 会先备份成 .wafbak）
+#   depends_on      = 官方源码里的锚点，写成 "路径:符号"；check_upstream.sh 会 grep 是否还在
+#                     以 runtime: 开头的锚点属于 openresty 运行时，不在源码树里检查
+#   marker          = 覆盖文件里我们注入的标记，上游若重写该文件会丢失
+version: 1
+upstream:
+  repo: 1Panel-dev/1Panel
+  tag: v2.5.1
+  go: "1.27.3"
+  node: "22"
+  edition: community
+patch_root: patch
+apply: patch/apply.sh
+remove: patch/apply.sh --remove
+
+# 全局检查：上游换版本时先看这几项
+global_checks:
+  - id: go-version
+    what: "agent/go.mod 与 core/go.mod 的 go 指令"
+    expected: "go 1.27.3"
+  - id: node-version
+    what: "frontend/package.json 的构建脚本 build:pro 与 Vite 版本"
+    expected: "vite build --mode production"
+  - id: router-glob
+    what: "前端路由自动收集机制"
+    expected: "frontend/src/routers/router.ts 含 import.meta.glob('./modules/*.ts')"
+  - id: agent-forward
+    what: "core 把非 /api/v2/core 请求转发给本地 agent"
+    expected: "core/middleware/helper.go 含 ShouldProxyToAgent"
+  - id: frontend-embed
+    what: "前端资源 embed 进 core"
+    expected: "core/cmd/server/web 含 go:embed all:assets"
+  - id: echarts-major
+    what: "ECharts 大版本（6.x 的 preserveAspect 行为与 5.x 不同）"
+    expected: "6.x"
+
+files:
+  - path: agent/app/api/v2/waf_log.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_log_extra.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_conf.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_state.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_rule.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_site.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_bw.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_block.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_html.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_overview.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_geo.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_geo_db.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_mmdb_conv.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_rule_form.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_map.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_monitor.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_geo_city.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: agent/app/api/v2/waf_mod_update.go
+    kind: new
+    area: agent-api
+    depends_on: ["agent/go.mod:go 1.27.3", "agent/go.mod:github.com/glebarez/go-sqlite"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: medium
+  - path: core/constant/common_waf_patch.go
+    kind: new
+    area: core-constant
+    depends_on: ["core/constant/common.go:WebUrlMap", "core/constant/common.go:DynamicRoutes"]
+    check: "cd core && go build ./cmd/server/main.go"
+    risk: high
+  - path: agent/router/ro_waf_log.go
+    kind: new
+    area: agent-router
+    depends_on: ["agent/router/entry.go:!xpack"]
+    check: "cd agent && go build ./cmd/server/main.go"
+    risk: high
+  - path: frontend/src/api/modules/waf-log.ts
+    kind: new
+    area: frontend-api
+    depends_on: ["core/middleware/helper.go:ShouldProxyToAgent"]
+    check: "npm run build:pro"
+    risk: low
+  - path: frontend/src/routers/modules/waf-log.ts
+    kind: new
+    area: frontend-router
+    depends_on: ["frontend/src/routers/router.ts:import.meta.glob"]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/routers/modules/waf-monitor.ts
+    kind: new
+    area: frontend-router
+    depends_on: ["frontend/src/routers/router.ts:import.meta.glob"]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/index.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/overview.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/echart.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/block.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/site.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/site-detail.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/custom.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/setting.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/blackwhite.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/geo-panel.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/cdn-panel.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/geo-db.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/rule-inline.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/monitor.vue
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/maps/world.json
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/maps/china.json
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/waf-log/flat.css
+    kind: new
+    area: frontend-view
+    depends_on: ["frontend/src/utils/echarts.ts:use("]
+    check: "npm run build:pro"
+    risk: medium
+  - path: frontend/src/views/setting/about/mod-upgrade.vue
+    kind: new
+    area: frontend-about
+    depends_on: ["frontend/src/views/setting/about/index.vue:SystemUpgrade"]
+    check: "npm run build:pro"
+    risk: medium
+  - path: lua/location_restrict.lua
+    kind: new
+    area: openresty-lua
+    depends_on: ["runtime:1pwaf/lib/location_restrict.lua", "runtime:data/conf/waf.conf:lua_package_path"]
+    check: "luajit -b / nginx -t"
+    risk: high
+
+overwrite:
+  - path: frontend/src/utils/echarts.ts
+    kind: overwrite
+    reason: "echarts/core 按需注册；漏注册会让地图散点静默消失"
+    marker: "EffectScatterChart"
+    check: "npm run build:pro"
+    risk: high
+  - path: frontend/src/views/setting/about/index.vue
+    kind: overwrite
+    reason: "关于页并列 Mod 更新入口"
+    marker: "ModUpgrade"
+    check: "npm run build:pro"
+    risk: high
+  - path: frontend/src/components/system-upgrade/upgrade/index.vue
+    kind: overwrite
+    reason: "官方升级抽屉顶部加覆盖补丁警告"
+    marker: "mod-upgrade-warn"
+    check: "npm run build:pro"
+    risk: high
