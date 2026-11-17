@@ -164,7 +164,7 @@ jobs:
           DIST="1panel-waf-${TAG}-linux-${{ matrix.arch }}"
           mkdir -p "$DIST"
           cp out/1panel-agent out/1panel-core "$DIST/"
-          cp install.sh "$DIST/"
+          cp repo/install.sh "$DIST/"
           cp -r repo/patch "$DIST/patch"
           cp repo/patch/scripts/waf_menu_patch.py repo/patch/scripts/monitor_menu_patch.py "$DIST/"
           cp repo/patch/lua/location_restrict.lua "$DIST/"
